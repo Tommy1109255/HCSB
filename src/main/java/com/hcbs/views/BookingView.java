@@ -16,7 +16,6 @@ import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.IntegerField;
-import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.spring.security.AuthenticationContext;
@@ -35,13 +34,17 @@ public class BookingView extends VerticalLayout {
     private final ShowingRepository showingRepository;
     private final UserRepository userRepository;
     private final AuthenticationContext authContext;
-
-    private ComboBox<Showing> showingSelect = new ComboBox<>("Select Showing");
     private DatePicker datePicker = new DatePicker("Select Date");
+    private ComboBox<com.hcbs.entity.Film> filmSelect = new ComboBox<>("Select Film");
+    private ComboBox<com.hcbs.entity.Cinema> cinemaSelect = new ComboBox<>("Select Cinema");
+    private ComboBox<Showing> showingSelect = new ComboBox<>("Select Showing (Time & Hall)");
+
     private IntegerField ticketCount = new IntegerField("Number of Tickets");
-    private TextField seats = new TextField("Seat Numbers (e.g. A1, A2)");
+    private SeatSelector seatSelector;
     private Button bookButton = new Button("Book Now");
     private Span capacityInfo = new Span();
+    
+    private java.util.List<Showing> showingsForDate = Collections.emptyList();
 
     public BookingView(CinemaService cinemaService, ShowingRepository showingRepository, 
                        UserRepository userRepository, AuthenticationContext authContext) {
@@ -53,63 +56,124 @@ public class BookingView extends VerticalLayout {
         add(new H2("Ticket Booking"));
 
         datePicker.setValue(LocalDate.now());
-        datePicker.addValueChangeListener(e -> updateShowings());
+        datePicker.addValueChangeListener(e -> loadShowingsForDate());
+
+        filmSelect.setItemLabelGenerator(com.hcbs.entity.Film::getTitle);
+        filmSelect.addValueChangeListener(e -> updateCinemaOptions());
+        
+        cinemaSelect.setItemLabelGenerator(com.hcbs.entity.Cinema::getName);
+        cinemaSelect.addValueChangeListener(e -> updateShowingOptions());
 
         showingSelect.setItemLabelGenerator(s -> 
-            s.getFilm().getTitle() + " - " + s.getStartTime() + " (" + s.getScreen().getCinema().getName() + ")");
+            s.getStartTime() + " - Screen " + s.getScreen().getScreenNumber());
         showingSelect.setWidth("400px");
         showingSelect.addValueChangeListener(e -> updateCapacityInfo());
 
-        ticketCount.setMin(1);
-        ticketCount.setMax(10);
-        ticketCount.setValue(1);
+        ticketCount.setReadOnly(true);
 
-        updateShowings();
+        seatSelector = new SeatSelector(0, 0, null, selected -> {
+            ticketCount.setValue(selected.size());
+            bookButton.setEnabled(!selected.isEmpty());
+        });
+
+        loadShowingsForDate();
 
         bookButton.addClickListener(e -> handleBooking());
+        bookButton.setEnabled(false);
 
-        add(datePicker, showingSelect, capacityInfo, ticketCount, seats, bookButton);
+        add(datePicker, filmSelect, cinemaSelect, showingSelect, capacityInfo, ticketCount, seatSelector, bookButton);
     }
 
-    private void updateShowings() {
+    private void loadShowingsForDate() {
         if (datePicker.getValue() != null) {
-            showingSelect.setItems(showingRepository.findByDate(datePicker.getValue()));
+            showingsForDate = showingRepository.findByDate(datePicker.getValue());
+        } else {
+            showingsForDate = Collections.emptyList();
+        }
+        updateFilmOptions();
+    }
+
+    private void updateFilmOptions() {
+        java.util.List<com.hcbs.entity.Film> films = showingsForDate.stream()
+            .map(Showing::getFilm)
+            .distinct()
+            .collect(java.util.stream.Collectors.toList());
+        filmSelect.setItems(films);
+        filmSelect.clear();
+        cinemaSelect.clear();
+        showingSelect.clear();
+    }
+    
+    private void updateCinemaOptions() {
+        com.hcbs.entity.Film selectedFilm = filmSelect.getValue();
+        if (selectedFilm != null) {
+            java.util.List<com.hcbs.entity.Cinema> cinemas = showingsForDate.stream()
+                .filter(s -> s.getFilm().equals(selectedFilm))
+                .map(s -> s.getScreen().getCinema())
+                .distinct()
+                .collect(java.util.stream.Collectors.toList());
+            cinemaSelect.setItems(cinemas);
+        } else {
+            cinemaSelect.setItems(Collections.emptyList());
+        }
+        cinemaSelect.clear();
+        showingSelect.clear();
+    }
+
+    private void updateShowingOptions() {
+        com.hcbs.entity.Film selectedFilm = filmSelect.getValue();
+        com.hcbs.entity.Cinema selectedCinema = cinemaSelect.getValue();
+        
+        if (selectedFilm != null && selectedCinema != null) {
+            java.util.List<Showing> filteredShowings = showingsForDate.stream()
+                .filter(s -> s.getFilm().equals(selectedFilm))
+                .filter(s -> s.getScreen().getCinema().equals(selectedCinema))
+                .collect(java.util.stream.Collectors.toList());
+            showingSelect.setItems(filteredShowings);
         } else {
             showingSelect.setItems(Collections.emptyList());
         }
-        updateCapacityInfo();
+        showingSelect.clear();
     }
 
     private void updateCapacityInfo() {
         Showing s = showingSelect.getValue();
         if (s != null) {
-            int booked = cinemaService.getBookingCountForShowing(s);
-            int available = s.getScreen().getCapacity() - booked;
+            int available = s.getRemainingSeats();
             capacityInfo.setText("Available Seats: " + available + " / " + s.getScreen().getCapacity());
             capacityInfo.getStyle().set("color", available > 0 ? "green" : "red");
             capacityInfo.getStyle().set("font-weight", "bold");
+            
+            // Update seat selector
+            java.util.Set<String> reserved = cinemaService.getReservedSeatsForShowing(s);
+            seatSelector.setDimensions(s.getScreen().getRows(), s.getScreen().getColumns());
+            seatSelector.setReservedSeats(reserved);
         } else {
             capacityInfo.setText("");
+            seatSelector.setDimensions(0, 0);
         }
     }
 
     private void handleBooking() {
-        if (showingSelect.getValue() == null || seats.isEmpty()) {
-            Notification.show("Please fill all fields");
+        if (showingSelect.getValue() == null || seatSelector.getSelectedSeats().isEmpty()) {
+            Notification.show("Please select a showing and at least one seat");
             return;
         }
 
         UserDetails userDetails = authContext.getAuthenticatedUser(UserDetails.class).get();
         User user = userRepository.findByUsername(userDetails.getUsername()).get();
 
+        String selectedSeatsStr = String.join(", ", seatSelector.getSelectedSeats());
+
         Booking booking = cinemaService.createBooking(
                 showingSelect.getValue(),
-                ticketCount.getValue(),
-                seats.getValue(),
+                seatSelector.getSelectedSeats().size(),
+                selectedSeatsStr,
                 user
         );
 
         showReceipt(booking);
+        updateCapacityInfo(); // Refresh seat map after booking
     }
 
     private void showReceipt(Booking b) {

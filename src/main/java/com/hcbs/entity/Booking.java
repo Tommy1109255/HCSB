@@ -22,6 +22,11 @@ public class Booking {
     private Showing showing;
 
     private int numTickets;
+    @ManyToOne
+    private Film film;
+
+    @ManyToOne
+    private Screen screen;
     private String seatNumbers;
     private double totalCost;
     private LocalDateTime bookingDate;

@@ -57,9 +57,7 @@ public class MainLayout extends AppLayout {
             }
             if (user.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN") || a.getAuthority().equals("ROLE_MANAGER"))) {
                 drawer.add(createMenuLink("Admin Dashboard", com.vaadin.flow.component.icon.VaadinIcon.DASHBOARD, AdminView.class));
-            }
-            if (user.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_MANAGER"))) {
-                drawer.add(createMenuLink("Manager View", com.vaadin.flow.component.icon.VaadinIcon.COG, ManagerView.class));
+                drawer.add(createMenuLink("Cinema & City Management", com.vaadin.flow.component.icon.VaadinIcon.COG, ManagerView.class));
             }
         });
 

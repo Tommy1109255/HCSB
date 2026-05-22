@@ -27,4 +27,7 @@ public class Showing {
 
     private double priceLowerHall;
     private double priceGallery;
+    private int remainingSeats;
+    @OneToMany(mappedBy = "showing", cascade = CascadeType.ALL, orphanRemoval = true)
+    private java.util.List<Booking> bookings;
 }

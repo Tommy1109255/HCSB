@@ -27,4 +27,9 @@ public class Film {
     private String posterUrl;
     private LocalDate releaseDate;
     private Double rating;
+    @OneToMany(mappedBy = "film", cascade = CascadeType.ALL, orphanRemoval = true)
+    private java.util.List<Showing> showings;
+
+    @OneToMany(mappedBy = "film", cascade = CascadeType.ALL, orphanRemoval = true)
+    private java.util.List<Booking> bookings;
 }

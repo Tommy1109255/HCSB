@@ -22,6 +22,7 @@ public class CinemaService {
     private final ShowingRepository showingRepository;
     private final BookingRepository bookingRepository;
     private final UserRepository userRepository;
+    private final FilePersistenceService filePersistenceService;
 
     public double calculatePrice(String cityName, LocalTime time) {
         int hour = time.getHour();
@@ -47,13 +48,23 @@ public class CinemaService {
 
     @Transactional
     public Booking createBooking(Showing showing, int numTickets, String seatNumbers, User user) {
+        if (showing.getRemainingSeats() < numTickets) {
+            throw new RuntimeException("Not enough tickets available! Only " + showing.getRemainingSeats() + " left.");
+        }
+
         String reference = UUID.randomUUID().toString().substring(0, 8).toUpperCase();
-        double totalCost = showing.getPriceLowerHall() * numTickets; // Simplified to lower hall for now
+        double totalCost = showing.getPriceLowerHall() * numTickets; 
         
+        // Update showing capacity
+        showing.setRemainingSeats(showing.getRemainingSeats() - numTickets);
+        showingRepository.save(showing);
+
         Booking booking = Booking.builder()
                 .reference(reference)
                 .showing(showing)
                 .numTickets(numTickets)
+                .film(showing.getFilm())
+                .screen(showing.getScreen())
                 .seatNumbers(seatNumbers)
                 .totalCost(totalCost)
                 .bookingDate(LocalDateTime.now())
@@ -61,7 +72,13 @@ public class CinemaService {
                 .cancelled(false)
                 .build();
         
-        return bookingRepository.save(booking);
+        Booking savedBooking = bookingRepository.save(booking);
+        
+        // Log to file
+        filePersistenceService.saveToFile("New Booking: Ref=" + savedBooking.getReference() + 
+            ", User=" + user.getUsername() + ", Tickets=" + numTickets);
+            
+        return savedBooking;
     }
 
     @Transactional
@@ -139,5 +156,13 @@ public class CinemaService {
                 .filter(b -> !b.isCancelled())
                 .mapToInt(Booking::getNumTickets)
                 .sum();
+    }
+
+    public java.util.Set<String> getReservedSeatsForShowing(Showing showing) {
+        return bookingRepository.findByShowing(showing).stream()
+                .filter(b -> !b.isCancelled())
+                .filter(b -> b.getSeatNumbers() != null && !b.getSeatNumbers().isEmpty())
+                .flatMap(b -> java.util.Arrays.stream(b.getSeatNumbers().split(",\\s*")))
+                .collect(java.util.stream.Collectors.toSet());
     }
 }

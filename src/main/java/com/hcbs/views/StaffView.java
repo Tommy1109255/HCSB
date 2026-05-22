@@ -18,10 +18,12 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import jakarta.annotation.security.RolesAllowed;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Route(value = "staff", layout = MainLayout.class)
@@ -57,7 +59,8 @@ public class StaffView extends VerticalLayout {
     private void configureGrid() {
         grid.addColumn(Booking::getReference).setHeader("Reference").setSortable(true);
         grid.addColumn(b -> b.getBookedBy() != null ? b.getBookedBy().getUsername() : "Guest").setHeader("Customer");
-        grid.addColumn(b -> b.getShowing().getFilm().getTitle()).setHeader("Film");
+        grid.addColumn(b -> b.getFilm() != null ? b.getFilm().getTitle() : "").setHeader("Film");
+        grid.addColumn(b -> "Screen " + (b.getScreen() != null ? b.getScreen().getScreenNumber() : "")).setHeader("Hall");
         grid.addColumn(b -> b.getShowing().getDate() + " " + b.getShowing().getStartTime()).setHeader("Showtime");
         grid.addColumn(Booking::getNumTickets).setHeader("Tickets");
         grid.addColumn(b -> "£" + b.getTotalCost()).setHeader("Total");
@@ -103,9 +106,64 @@ public class StaffView extends VerticalLayout {
         customerSelect.setItems(userRepository.findAll());
         customerSelect.setItemLabelGenerator(User::getUsername);
 
-        ComboBox<Showing> showingSelect = new ComboBox<>("Select Showing");
-        showingSelect.setItems(showingRepository.findAll());
-        showingSelect.setItemLabelGenerator(s -> s.getFilm().getTitle() + " (" + s.getDate() + " " + s.getStartTime() + ")");
+        DatePicker datePicker = new DatePicker("Select Date");
+        ComboBox<com.hcbs.entity.Film> filmSelect = new ComboBox<>("Select Film");
+        ComboBox<com.hcbs.entity.Cinema> cinemaSelect = new ComboBox<>("Select Cinema");
+        ComboBox<Showing> showingSelect = new ComboBox<>("Select Showing (Time & Hall)");
+
+        datePicker.setValue(LocalDate.now());
+
+        Runnable updateFilmOptions = () -> {
+            if (datePicker.getValue() == null) {
+                filmSelect.setItems(java.util.Collections.emptyList());
+                return;
+            }
+            java.util.List<Showing> shows = showingRepository.findByDate(datePicker.getValue());
+            java.util.List<com.hcbs.entity.Film> films = shows.stream().map(Showing::getFilm).distinct().collect(java.util.stream.Collectors.toList());
+            filmSelect.setItems(films);
+            filmSelect.clear();
+            cinemaSelect.clear();
+            showingSelect.clear();
+        };
+
+        datePicker.addValueChangeListener(e -> updateFilmOptions.run());
+        filmSelect.setItemLabelGenerator(com.hcbs.entity.Film::getTitle);
+
+        filmSelect.addValueChangeListener(e -> {
+            com.hcbs.entity.Film selectedFilm = e.getValue();
+            if (selectedFilm != null && datePicker.getValue() != null) {
+                java.util.List<Showing> shows = showingRepository.findByDate(datePicker.getValue());
+                java.util.List<com.hcbs.entity.Cinema> cinemas = shows.stream()
+                        .filter(s -> s.getFilm().equals(selectedFilm))
+                        .map(s -> s.getScreen().getCinema())
+                        .distinct().collect(java.util.stream.Collectors.toList());
+                cinemaSelect.setItems(cinemas);
+            } else {
+                cinemaSelect.setItems(java.util.Collections.emptyList());
+            }
+            cinemaSelect.clear();
+            showingSelect.clear();
+        });
+
+        cinemaSelect.setItemLabelGenerator(com.hcbs.entity.Cinema::getName);
+        cinemaSelect.addValueChangeListener(e -> {
+            com.hcbs.entity.Film selectedFilm = filmSelect.getValue();
+            com.hcbs.entity.Cinema selectedCinema = e.getValue();
+            if (selectedFilm != null && selectedCinema != null && datePicker.getValue() != null) {
+                java.util.List<Showing> shows = showingRepository.findByDate(datePicker.getValue());
+                java.util.List<Showing> filtered = shows.stream()
+                        .filter(s -> s.getFilm().equals(selectedFilm) && s.getScreen().getCinema().equals(selectedCinema))
+                        .collect(java.util.stream.Collectors.toList());
+                showingSelect.setItems(filtered);
+            } else {
+                showingSelect.setItems(java.util.Collections.emptyList());
+            }
+            showingSelect.clear();
+        });
+
+        showingSelect.setItemLabelGenerator(s -> s.getStartTime() + " - Screen " + s.getScreen().getScreenNumber());
+
+        updateFilmOptions.run();
 
         IntegerField tickets = new IntegerField("Number of Tickets");
         tickets.setMin(1);
@@ -130,7 +188,7 @@ public class StaffView extends VerticalLayout {
 
         Button cancel = new Button("Cancel", e -> dialog.close());
 
-        dialogLayout.add(customerSelect, showingSelect, tickets, seats);
+        dialogLayout.add(customerSelect, datePicker, filmSelect, cinemaSelect, showingSelect, tickets, seats);
         dialog.add(dialogLayout);
         dialog.getFooter().add(cancel, save);
         dialog.open();
