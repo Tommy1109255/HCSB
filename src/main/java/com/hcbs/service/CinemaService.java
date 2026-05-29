@@ -24,28 +24,28 @@ public class CinemaService {
     private final UserRepository userRepository;
     private final FilePersistenceService filePersistenceService;
 
-    public double calculatePrice(String cityName, LocalTime time) {
-        int hour = time.getHour();
-        if (cityName.equalsIgnoreCase("Birmingham")) {
-            if (hour < 12) return 5.0;
-            if (hour < 17) return 6.0;
-            return 7.0;
-        } else if (cityName.equalsIgnoreCase("Bristol")) {
-            if (hour < 12) return 6.0;
-            if (hour < 17) return 7.0;
-            return 8.0;
-        } else if (cityName.equalsIgnoreCase("Cardiff")) {
-            if (hour < 12) return 5.0;
-            if (hour < 17) return 6.0;
-            return 7.0;
-        } else if (cityName.equalsIgnoreCase("London")) {
-            if (hour < 12) return 10.0;
-            if (hour < 17) return 11.0;
-            return 12.0;
-        }
-        return 7.0; // Default
-    }
-
+//    public double calculatePrice(String cityName, LocalTime time) {
+//        int hour = time.getHour();
+//        if (cityName.equalsIgnoreCase("Birmingham")) {
+//            if (hour < 12) return 5.0;
+//            if (hour < 17) return 6.0;
+//            return 7.0;
+//        } else if (cityName.equalsIgnoreCase("Bristol")) {
+//            if (hour < 12) return 6.0;
+//            if (hour < 17) return 7.0;
+//            return 8.0;
+//        } else if (cityName.equalsIgnoreCase("Cardiff")) {
+//            if (hour < 12) return 5.0;
+//            if (hour < 17) return 6.0;
+//            return 7.0;
+//        } else if (cityName.equalsIgnoreCase("London")) {
+//            if (hour < 12) return 10.0;
+//            if (hour < 17) return 11.0;
+//            return 12.0;
+//        }
+//        return 7.0; // Default
+//    }
+     //创建预订
     @Transactional
     public Booking createBooking(Showing showing, int numTickets, String seatNumbers, User user) {
         if (showing.getRemainingSeats() < numTickets) {
@@ -81,6 +81,7 @@ public class CinemaService {
         return savedBooking;
     }
 
+    //取消票 逻辑
     @Transactional
     public String cancelBooking(String reference) {
         Booking booking = bookingRepository.findByReference(reference)
@@ -151,12 +152,12 @@ public class CinemaService {
                 .count();
     }
 
-    public int getBookingCountForShowing(Showing showing) {
-        return bookingRepository.findByShowing(showing).stream()
-                .filter(b -> !b.isCancelled())
-                .mapToInt(Booking::getNumTickets)
-                .sum();
-    }
+//    public int getBookingCountForShowing(Showing showing) {
+//        return bookingRepository.findByShowing(showing).stream()
+//                .filter(b -> !b.isCancelled())
+//                .mapToInt(Booking::getNumTickets)
+//                .sum();
+//    }
 
     public java.util.Set<String> getReservedSeatsForShowing(Showing showing) {
         return bookingRepository.findByShowing(showing).stream()

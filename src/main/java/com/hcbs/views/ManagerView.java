@@ -21,7 +21,7 @@ import jakarta.annotation.security.RolesAllowed;
 
 @Route(value = "manager", layout = MainLayout.class)
 @PageTitle("Cinema & City Management | Horizon Cinemas")
-@RolesAllowed({"MANAGER", "ADMIN"})
+@RolesAllowed({"MANAGER"})
 public class ManagerView extends VerticalLayout {
 
     private final CityRepository cityRepository;

@@ -1,5 +1,4 @@
 package com.hcbs.views;
-
 import com.vaadin.flow.component.applayout.AppLayout;
 import com.vaadin.flow.component.applayout.DrawerToggle;
 import com.vaadin.flow.component.button.Button;
@@ -39,24 +38,28 @@ public class MainLayout extends AppLayout {
         header.expand(logo);
         header.setWidthFull();
         header.addClassNames("py-0", "px-m");
-
-        addToNavbar(new DrawerToggle(), header);
+        addToNavbar(new DrawerToggle());
+        addToNavbar(header);
         setPrimarySection(Section.DRAWER);
     }
 
     private void createDrawer() {
         VerticalLayout drawer = new VerticalLayout();
-        
+
         drawer.add(createMenuLink("Film Listing", com.vaadin.flow.component.icon.VaadinIcon.MOVIE, FilmListingView.class));
         drawer.add(createMenuLink("Book Tickets", com.vaadin.flow.component.icon.VaadinIcon.TICKET, BookingView.class));
         drawer.add(createMenuLink("Cancel Booking", com.vaadin.flow.component.icon.VaadinIcon.CLOSE_CIRCLE, CancellationView.class));
-        
+
         authContext.getAuthenticatedUser(UserDetails.class).ifPresent(user -> {
             if (user.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN") || a.getAuthority().equals("ROLE_MANAGER") || a.getAuthority().equals("ROLE_STAFF"))) {
                 drawer.add(createMenuLink("Staff View", com.vaadin.flow.component.icon.VaadinIcon.USERS, StaffView.class));
             }
+
             if (user.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN") || a.getAuthority().equals("ROLE_MANAGER"))) {
                 drawer.add(createMenuLink("Admin Dashboard", com.vaadin.flow.component.icon.VaadinIcon.DASHBOARD, AdminView.class));
+
+            }
+            if(user.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_MANAGER"))){
                 drawer.add(createMenuLink("Cinema & City Management", com.vaadin.flow.component.icon.VaadinIcon.COG, ManagerView.class));
             }
         });
@@ -65,9 +68,9 @@ public class MainLayout extends AppLayout {
     }
 
     private RouterLink createMenuLink(String text, com.vaadin.flow.component.icon.VaadinIcon icon, Class<? extends com.vaadin.flow.component.Component> view) {
-        RouterLink link = new RouterLink(view);
-        link.add(icon.create());
-        link.add(new com.vaadin.flow.component.html.Span(text));
+        RouterLink link = new RouterLink(view);//建一个 Vaadin 的路由链接组件
+        link.add(icon.create());//向链接中添加一个图标组件。
+        link.add(new com.vaadin.flow.component.html.Span(text));//向链接中添加一个文本 span 元素
         link.getStyle().set("display", "flex");
         link.getStyle().set("align-items", "center");
         link.getStyle().set("gap", "var(--lumo-space-m)");

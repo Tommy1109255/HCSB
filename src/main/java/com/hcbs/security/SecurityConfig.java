@@ -22,7 +22,7 @@ public class SecurityConfig extends VaadinWebSecurity {
         http.authorizeHttpRequests(auth ->
                 auth.requestMatchers(new AntPathRequestMatcher("/public/**")).permitAll()
                         .requestMatchers(new AntPathRequestMatcher("/h2-console/**")).permitAll()
-                        .requestMatchers(new AntPathRequestMatcher("/login")).permitAll() // <--- 添加这一行
+                        .requestMatchers(new AntPathRequestMatcher("/login")).permitAll()
         );
 
         // Allow H2 console frames

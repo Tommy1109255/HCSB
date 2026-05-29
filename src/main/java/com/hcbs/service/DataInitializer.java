@@ -66,43 +66,46 @@ public class DataInitializer implements CommandLineRunner {
 
         // 3. Create Films
         if (filmRepository.count() == 0) {
+            // 1. 火遮眼（2026 最热华语动作片）
             filmRepository.save(Film.builder()
-                    .title("Oppenheimer")
-                    .description("The story of J. Robert Oppenheimer and his role in the development of the atomic bomb.")
-                    .genre("Biography/Drama")
-                    .director("Christopher Nolan")
-                    .actors("Cillian Murphy, Emily Blunt")
-                    .ageRating("15")
-                    .durationMinutes(180)
-                    .posterUrl("https://images.unsplash.com/photo-1534447677768-be436bb09401?w=400&h=600&fit=crop")
-                    .releaseDate(LocalDate.of(2023, 7, 21))
-                    .rating(8.4)
-                    .build());
-            
-            filmRepository.save(Film.builder()
-                    .title("Barbie")
-                    .description("Barbie suffers a crisis that leads her to question her world and her existence.")
-                    .genre("Adventure/Comedy")
-                    .director("Greta Gerwig")
-                    .actors("Margot Robbie, Ryan Gosling")
-                    .ageRating("12A")
-                    .durationMinutes(114)
-                    .posterUrl("https://images.unsplash.com/photo-1601513445506-2ab0d4fb4229?w=400&h=600&fit=crop")
-                    .releaseDate(LocalDate.of(2023, 7, 21))
-                    .rating(7.0)
+                    .title("火遮眼")
+                    .description("失语维修工王伟为营救被绑架的女儿，独自踏上血腥复仇之路，拳拳到肉的硬核动作场面。")
+                    .genre("动作/犯罪")
+                    .director("谷垣健治")
+                    .actors("谢苗、杨恩又、雅彦·鲁伊安")
+                    .ageRating("18+")
+                    .durationMinutes(108)
+                    .posterUrl("https://q3.itc.cn/q_70/images03/20260527/d7c30e51a5bb4153a3a49d84fbfe4d29.jpeg")
+                    .releaseDate(LocalDate.of(2026, 6, 11))
+                    .rating(8.9)
                     .build());
 
+            // 2. 挽救计划（2026 好莱坞科幻爆款）
             filmRepository.save(Film.builder()
-                    .title("Dune: Part Two")
-                    .description("Paul Atreides unites with Chani and the Fremen while on a warpath of revenge.")
-                    .genre("Sci-Fi/Action")
-                    .director("Denis Villeneuve")
-                    .actors("Timothée Chalamet, Zendaya")
+                    .title("挽救计划")
+                    .description("太阳即将毁灭，一名宇航员与外星伙伴联手展开跨物种拯救地球的硬核科幻冒险。")
+                    .genre("科幻/冒险")
+                    .director("菲尔·罗德、克里斯托弗·米勒")
+                    .actors("瑞恩·高斯林、桑德拉·惠勒")
                     .ageRating("12A")
-                    .durationMinutes(166)
-                    .posterUrl("https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?w=400&h=600&fit=crop")
-                    .releaseDate(LocalDate.of(2024, 3, 1))
-                    .rating(8.6)
+                    .durationMinutes(130)
+                    .posterUrl("https://img0.baidu.com/it/u=1725255890,1125476600&fm=253&fmt=auto&app=120&f=JPEG?w=500&h=696")
+                    .releaseDate(LocalDate.of(2026, 3, 20))
+                    .rating(7.8)
+                    .build());
+
+            // 3. 给阿嬷的情书（2026 华语口碑冠军）
+            filmRepository.save(Film.builder()
+                    .title("给阿嬷的情书")
+                    .description("一封跨越时光的家书，讲述祖孙之间最纯粹动人的亲情，治愈又催泪。")
+                    .genre("剧情/家庭")
+                    .director("蓝鸿春")
+                    .actors("李思潼、王彦桐、郑润奇")
+                    .ageRating("PG")
+                    .durationMinutes(115)
+                    .posterUrl("https://q4.itc.cn/q_70/images03/20260425/5503f8c5f0854728bbd31d26552dc4e5.jpeg")
+                    .releaseDate(LocalDate.of(2026, 4, 30))
+                    .rating(9.2)
                     .build());
         }
 

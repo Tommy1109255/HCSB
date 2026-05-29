@@ -40,7 +40,7 @@ public class FilmListingView extends VerticalLayout {
 
         add(container);
     }
-
+    //卡片
     private VerticalLayout createFilmCard(Film film) {
         VerticalLayout card = new VerticalLayout();
         card.setWidth("300px");
