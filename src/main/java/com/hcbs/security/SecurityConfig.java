@@ -19,23 +19,24 @@ public class SecurityConfig extends VaadinWebSecurity {
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
-        http.authorizeHttpRequests(auth ->
-                auth.requestMatchers(new AntPathRequestMatcher("/public/**")).permitAll()
-                        .requestMatchers(new AntPathRequestMatcher("/h2-console/**")).permitAll()
-                        .requestMatchers(new AntPathRequestMatcher("/login")).permitAll()
-        );
-
-        // Allow H2 console frames
-        http.headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()));
-
-        // Disable CSRF for H2 console
-        // 注意：通常建议对登录接口也禁用CSRF或者确保Thymeleaf等模板引擎正确携带CSRF Token
-        // 如果登录提交的是POST请求且启用了CSRF，需要确保前端表单包含 _csrf token
-        http.csrf(csrf -> csrf.ignoringRequestMatchers(new AntPathRequestMatcher("/h2-console/**")));
-
+        // 1. Call super.configure(http) FIRST to let Vaadin set up its internal routing rules and static resources permissions!
         super.configure(http);
+
+        // 2. Set up the login view. This automatically allows anonymous access to the login view and its static resources.
         setLoginView(http, "/login");
 
+        // 3. Configure custom rules for other URLs
+        http.authorizeHttpRequests(auth -> auth
+                .requestMatchers(new AntPathRequestMatcher("/public/**")).permitAll()
+                .requestMatchers(new AntPathRequestMatcher("/h2-console/**")).permitAll()
+                .anyRequest().authenticated()
+        );
+
+        // 4. Custom settings for H2 console
+        http.headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()));
+        http.csrf(csrf -> csrf.ignoringRequestMatchers(new AntPathRequestMatcher("/h2-console/**")));
+
+        // 5. Custom Success Handler for role-based redirection
         http.formLogin(form -> form.successHandler((request, response, authentication) -> {
             Set<String> roles = AuthorityUtils.authorityListToSet(authentication.getAuthorities());
             if (roles.contains("ROLE_ADMIN")) {
